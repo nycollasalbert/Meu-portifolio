@@ -546,7 +546,7 @@ const Contact = () => {
             <Mail className="text-foreground" size={28} />
           </div>
           <h3 className="text-lg font-semibold text-foreground mb-2">E-mail</h3>
-          <p className="text-muted-foreground mb-6 text-sm break-all">nycollascintra2305@gmail.com</p>
+          <p className="text-muted-foreground mb-6 text-sm break-all">contatonycortex@gmail.com</p>
           <a 
             href="mailto:nycollascintra2305@gmail.com" 
             className="w-full inline-flex items-center justify-center px-4 py-3 rounded-lg border border-border bg-background text-foreground font-medium hover:bg-secondary transition-colors mt-auto"
