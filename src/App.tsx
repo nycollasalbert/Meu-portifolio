@@ -14,6 +14,12 @@ import {
   Calendar, 
   ExternalLink, 
   Globe2,
+  FileText,
+  Sparkles,
+  Megaphone,
+  Table2,
+  Sun,
+  Moon,
   Phone, 
   Mail, 
   Menu, 
@@ -33,6 +39,15 @@ const globalStyles = `
     --accent: 187 85% 43%;
   }
 
+  :root[data-theme='dark'] {
+    --background: 222 24% 7%;
+    --foreground: 210 20% 96%;
+    --muted: 215 14% 68%;
+    --secondary: 220 17% 13%;
+    --border: 216 14% 22%;
+    --accent: 187 88% 50%;
+  }
+
   html {
     scroll-behavior: smooth;
   }
@@ -43,6 +58,7 @@ const globalStyles = `
     color: hsl(var(--foreground));
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 200ms ease, color 200ms ease;
   }
 
   .font-display {
@@ -60,6 +76,58 @@ const globalStyles = `
   .bg-accent\\/20 { background-color: hsla(var(--accent), 0.2); }
   .text-accent { color: hsl(var(--accent)); }
   .border-b-border { border-bottom-color: hsl(var(--border)); }
+
+  .bg-background,
+  .bg-secondary,
+  .text-foreground,
+  .text-muted-foreground,
+  .border-border,
+  .border-b-border,
+  .ring-border {
+    transition-property: background-color, border-color, color, box-shadow;
+    transition-duration: 450ms;
+    transition-timing-function: ease;
+  }
+
+  .hero-gif-frame {
+    box-shadow:
+      0 0 28px rgba(249, 115, 22, 0.24),
+      0 18px 55px rgba(15, 23, 42, 0.18);
+  }
+
+  .hero-gif-frame::before {
+    content: '';
+    position: absolute;
+    inset: -58%;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      transparent 230deg,
+      rgba(249, 115, 22, 0.96) 270deg,
+      rgba(255, 215, 105, 0.98) 292deg,
+      transparent 330deg,
+      transparent 360deg
+    );
+    animation: hero-border-glow 4.2s linear infinite;
+    filter: blur(0.5px);
+    z-index: 0;
+  }
+
+  .hero-gif-frame::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border-radius: inherit;
+    box-shadow: inset 0 0 16px rgba(251, 146, 60, 0.24);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  @keyframes hero-border-glow {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 `;
 
 const Typewriter = ({ words, interval = 3000 }: { words: string[], interval?: number }) => {
@@ -133,6 +201,17 @@ const Badge = ({ children }: { children: React.ReactNode }) => (
   </span>
 );
 
+const HighlightText = ({ children }: { children: React.ReactNode }) => (
+  <motion.strong
+    whileHover={{ scale: 1.06 }}
+    whileTap={{ scale: 1.1 }}
+    transition={{ type: 'spring', stiffness: 420, damping: 18 }}
+    className="inline-block origin-bottom cursor-default font-semibold text-foreground hover:text-accent"
+  >
+    {children}
+  </motion.strong>
+);
+
 type SkillItem = {
   name: string;
   desc: string;
@@ -144,7 +223,84 @@ type SkillCategory = {
   items: SkillItem[];
 };
 
-const Header = () => {
+type Theme = 'light' | 'dark';
+type ThemeTransition = {
+  id: number;
+  from: Theme;
+};
+
+const getInitialTheme = (): Theme => {
+  if (typeof window === 'undefined') {
+    return 'light';
+  }
+
+  const savedTheme = window.localStorage.getItem('theme');
+
+  if (savedTheme === 'light' || savedTheme === 'dark') {
+    return savedTheme;
+  }
+
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+};
+
+const ThemeToggle = ({ theme, onToggleTheme }: { theme: Theme, onToggleTheme: () => void }) => {
+  const isDark = theme === 'dark';
+
+  return (
+    <button
+      type="button"
+      onClick={onToggleTheme}
+      className="relative inline-flex h-10 w-[72px] items-center rounded-full border border-border bg-background p-1 shadow-sm hover:bg-secondary transition-colors"
+      aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo noturno'}
+      title={isDark ? 'Modo claro' : 'Modo noturno'}
+    >
+      <Sun className="absolute left-3 text-muted-foreground" size={15} />
+      <Moon className="absolute right-3 text-muted-foreground" size={15} />
+      <motion.span
+        animate={{ x: isDark ? 32 : 0 }}
+        transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+        className="relative z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-[hsl(var(--foreground))] text-[hsl(var(--background))] shadow-md"
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span
+            key={theme}
+            initial={{ opacity: 0, rotate: isDark ? -90 : 90, scale: 0.65 }}
+            animate={{ opacity: 1, rotate: 0, scale: 1 }}
+            exit={{ opacity: 0, rotate: isDark ? 90 : -90, scale: 0.65 }}
+            transition={{ duration: 0.22 }}
+            className="inline-flex"
+          >
+            {isDark ? <Moon size={16} /> : <Sun size={16} />}
+          </motion.span>
+        </AnimatePresence>
+      </motion.span>
+    </button>
+  );
+};
+
+const themeFadeBackgrounds: Record<Theme, string> = {
+  light: 'hsl(0 0% 100%)',
+  dark: 'hsl(222 24% 7%)'
+};
+
+const ThemeFade = ({ transition }: { transition: ThemeTransition | null }) => (
+  <AnimatePresence>
+    {transition && (
+      <motion.div
+        key={transition.id}
+        aria-hidden="true"
+        initial={{ opacity: 1 }}
+        animate={{ opacity: 0 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.65, ease: 'easeInOut' }}
+        className="pointer-events-none fixed inset-0 z-[80]"
+        style={{ backgroundColor: themeFadeBackgrounds[transition.from] }}
+      />
+    )}
+  </AnimatePresence>
+);
+
+const Header = ({ theme, onToggleTheme }: { theme: Theme, onToggleTheme: () => void }) => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -152,6 +308,7 @@ const Header = () => {
     { name: 'Home', href: '#home' },
     { name: 'Sobre', href: '#sobre' },
     { name: 'Habilidades', href: '#habilidades' },
+    { name: 'Serviços', href: '#servicos' },
     { name: 'Projetos', href: '#projetos' },
     { name: 'Contato', href: '#contato' },
   ];
@@ -169,17 +326,25 @@ const Header = () => {
           <img src="https://i.ibb.co/B2W5Vbcj/nycortex.png" alt="NYcortex Logo" className="h-24 w-24 sm:h-32 sm:w-32 object-contain hover:opacity-80 transition-opacity" />
         </a>
         
-        <nav className="hidden md:flex gap-8">
-          {navItems.map((item) => (
-            <a key={item.name} href={item.href} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              {item.name}
-            </a>
-          ))}
-        </nav>
+        <div className="hidden md:flex items-center gap-6">
+          <nav className="flex gap-6">
+            {navItems.map((item) => (
+              <a key={item.name} href={item.href} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                {item.name}
+              </a>
+            ))}
+          </nav>
 
-        <button className="md:hidden text-foreground p-2 -mr-2" onClick={() => setMobileMenuOpen(true)} aria-label="Abrir menu">
-          <Menu size={24} />
-        </button>
+          <ThemeToggle theme={theme} onToggleTheme={onToggleTheme} />
+        </div>
+
+        <div className="flex md:hidden items-center gap-2">
+          <ThemeToggle theme={theme} onToggleTheme={onToggleTheme} />
+
+          <button className="text-foreground p-2 -mr-2" onClick={() => setMobileMenuOpen(true)} aria-label="Abrir menu">
+            <Menu size={24} />
+          </button>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -192,9 +357,13 @@ const Header = () => {
           >
             <div className="flex justify-between items-center p-6 sm:p-8 border-b border-border">
               <img src="https://i.ibb.co/B2W5Vbcj/nycortex.png" alt="NYcortex Logo" className="h-24 w-24 object-contain" />
-              <button onClick={() => setMobileMenuOpen(false)} className="text-foreground p-2 -mr-2" aria-label="Fechar menu">
-                <X size={24} />
-              </button>
+              <div className="flex items-center gap-2">
+                <ThemeToggle theme={theme} onToggleTheme={onToggleTheme} />
+
+                <button onClick={() => setMobileMenuOpen(false)} className="text-foreground p-2 -mr-2" aria-label="Fechar menu">
+                  <X size={24} />
+                </button>
+              </div>
             </div>
             <div className="flex flex-col p-6 sm:p-8 gap-6">
               {navItems.map((item, i) => (
@@ -263,12 +432,14 @@ const Hero = () => {
         >
           <div className="absolute inset-0 bg-accent/20 blur-3xl rounded-full scale-75 -z-10"></div>
           
-          <div className="relative w-72 h-72 sm:w-96 sm:h-96 rounded-2xl overflow-hidden ring-4 ring-border shadow-xl">
-            <img 
-              src="https://i.ibb.co/jPTYLN5J/giff.webp" 
-              alt="Nycollas Cintra - Perfil Animado" 
-              className="w-full h-full object-cover"
-            />
+          <div className="hero-gif-frame relative w-72 h-72 sm:w-96 sm:h-96 rounded-2xl overflow-hidden p-1">
+            <div className="relative z-10 h-full w-full overflow-hidden rounded-[0.875rem] bg-background ring-1 ring-border">
+              <img 
+                src="https://i.ibb.co/jPTYLN5J/giff.webp" 
+                alt="Nycollas Cintra - Perfil Animado" 
+                className="w-full h-full object-cover"
+              />
+            </div>
           </div>
         </motion.div>
 
@@ -293,19 +464,19 @@ const About = () => {
         
         <div className="space-y-6 text-muted-foreground leading-relaxed text-base sm:text-lg">
           <p>
-            Sou Nycollas — desenvolvedor web, analista de dados e alguém que não consegue olhar para um sistema sem querer entender como ele funciona por dentro.
+            Sou Nycollas — <HighlightText>desenvolvedor web</HighlightText>, <HighlightText>analista de dados</HighlightText> e alguém que não consegue olhar para um sistema sem querer entender como ele funciona por dentro.
           </p>
           <p>
-            Aos 13 anos, peguei o notebook da minha mãe e comecei a estudar JavaScript sem saber exatamente onde aquilo me levaria. O que me fisgou não foi só a linguagem ou as linhas de código, mas a sensação de poder criar algo meu dentro de um espaço tão grande quanto a internet. Era parecida com a sensação de construir o maior castelo de areia da roda só para poder chamar de meu. Essa vontade nunca foi embora — só mudou de areia para tela.
+            Aos 13 anos, peguei o notebook da minha mãe e comecei a estudar <HighlightText>JavaScript</HighlightText> sem saber exatamente onde aquilo me levaria. O que me fisgou não foi só a linguagem ou as linhas de código, mas a sensação de <HighlightText>poder criar algo meu</HighlightText> dentro de um espaço tão grande quanto a internet. Era parecida com a sensação de construir o maior castelo de areia da roda só para poder chamar de meu. Essa vontade nunca foi embora — só mudou de areia para tela.
           </p>
           <p>
-            Desde então, fui explorando hardware, software, APIs, design gráfico, inteligência artificial e análise de dados. Não porque segui um roteiro pronto, mas porque cada coisa que aprendi abriu espaço para a próxima. Não sou fanático por linguagens ou frameworks. Sou fanático pela tecnologia em si — pelo que ela permite construir.
+            Desde então, fui explorando hardware, software, APIs, design gráfico, <HighlightText>inteligência artificial</HighlightText> e <HighlightText>análise de dados</HighlightText>. Não porque segui um roteiro pronto, mas porque cada coisa que aprendi abriu espaço para a próxima. Não sou fanático por linguagens ou frameworks. Sou fanático pela tecnologia em si — pelo que ela permite construir.
           </p>
           <p>
-            Hoje desenvolvo projetos que unem front-end, dados e IA aplicada. Para mim, código bom é código que comunica: com a máquina, com quem lê depois, com quem mantém e com quem vai dar continuidade. Organização e autonomia não são palavras bonitas no currículo; são a forma como eu realmente trabalho.
+            Hoje desenvolvo projetos que unem <HighlightText>front-end, dados e IA aplicada</HighlightText>. Para mim, código bom é código que comunica: com a máquina, com quem lê depois, com quem mantém e com quem vai dar continuidade. <HighlightText>Organização e autonomia</HighlightText> não são palavras bonitas no currículo; são a forma como eu realmente trabalho.
           </p>
           <p>
-            Atualmente, estou explorando IA de forma prática: automações, análise de padrões e criação de conteúdo útil. Não porque é tendência, mas porque funciona — e eu gosto de coisas que funcionam.
+            Atualmente, estou explorando IA de forma prática: <HighlightText>automações</HighlightText>, <HighlightText>análise de padrões</HighlightText> e criação de conteúdo útil. Não porque é tendência, mas porque funciona — e eu gosto de coisas que funcionam.
           </p>
 
           <Card className="mt-8 !p-5 flex items-center gap-4 bg-background">
@@ -384,6 +555,70 @@ const Skills = () => {
             </div>
           </div>
         ))}
+      </div>
+    </Section>
+  );
+};
+
+const Services = () => {
+  const services = [
+    {
+      title: "Site completo com domínio ativo",
+      desc: "Site do zero ao ar, com domínio configurado, hospedagem e tudo funcionando.",
+      icon: Globe2
+    },
+    {
+      title: "Copy profissional que vende",
+      desc: "Texto pensado pra converter, sem jargão de IA e sem parecer forçado.",
+      icon: FileText
+    },
+    {
+      title: "Imagens criadas do zero com IA",
+      desc: "Com ou sem referência visual, em alta qualidade e sem aspecto artificial.",
+      icon: Sparkles
+    },
+    {
+      title: "Marketing digital integrado",
+      desc: "Estratégia de divulgação, criativos pra redes sociais e presença online estruturada.",
+      icon: Megaphone
+    },
+    {
+      title: "Planilhas e dashboards Excel",
+      desc: "Controle de clientes, consultas, gráficos e relatórios feitos sob medida.",
+      icon: Table2
+    }
+  ];
+
+  return (
+    <Section id="servicos" className="bg-secondary/30">
+      <SectionHeading subtitle="Soluções práticas para presença digital, vendas e organização.">Serviços</SectionHeading>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {services.map((service, i) => {
+          const Icon = service.icon;
+
+          return (
+            <Card key={service.title} delay={i * 0.08} className="!p-5 flex min-h-48 flex-col gap-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="w-12 h-12 rounded-lg bg-secondary flex items-center justify-center shrink-0 ring-1 ring-border">
+                  <Icon className="text-foreground" size={24} />
+                </div>
+                <span className="font-display text-[10px] leading-none text-muted-foreground">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+              </div>
+
+              <div>
+                <h3 className="text-base font-semibold text-foreground leading-snug">
+                  {service.title}
+                </h3>
+                <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
+                  {service.desc}
+                </p>
+              </div>
+            </Card>
+          );
+        })}
       </div>
     </Section>
   );
@@ -607,6 +842,14 @@ const Footer = () => (
 );
 
 export default function App() {
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [themeTransition, setThemeTransition] = useState<ThemeTransition | null>(null);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    window.localStorage.setItem('theme', theme);
+  }, [theme]);
+
   useEffect(() => {
     document.title = "Nycollas Cintra | Portfolio";
     
@@ -634,15 +877,22 @@ export default function App() {
     applyFavicon("https://i.ibb.co/B2W5Vbcj/nycortex.png");
   }, []);
 
+  const toggleTheme = () => {
+    setThemeTransition({ id: window.performance.now(), from: theme });
+    setTheme((currentTheme) => currentTheme === 'dark' ? 'light' : 'dark');
+  };
+
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: globalStyles }} />
+      <ThemeFade transition={themeTransition} />
       <div className="min-h-screen bg-background text-foreground overflow-x-hidden selection:bg-muted selection:text-foreground">
-        <Header />
+        <Header theme={theme} onToggleTheme={toggleTheme} />
         <main>
           <Hero />
           <About />
           <Skills />
+          <Services />
           <LanguagesAndCourses />
           <Projects />
           <Contact />
