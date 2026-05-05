@@ -13,11 +13,13 @@ import {
   Image as ImageIcon, 
   Calendar, 
   ExternalLink, 
+  Globe2,
   Phone, 
   Mail, 
   Menu, 
   X
 } from 'lucide-react';
+import sunshinePreview from './assets/sunshine-preview.png';
 
 const globalStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Press+Start+2P&display=swap');
@@ -457,18 +459,29 @@ const LanguagesAndCourses = () => {
 const Projects = () => {
   const projects = [
     {
+      name: "Sunshine da Amazônia",
+      repo: "sunshinedaamazonia.com.br",
+      desc: "Site institucional e comercial com apresentação da marca, chamada para representantes e contato direto pelo WhatsApp.",
+      tags: ["Site publicado", "Responsivo", "WhatsApp"],
+      link: "https://sunshinedaamazonia.com.br/",
+      cta: "Ver site",
+      preview: sunshinePreview
+    },
+    {
       name: "projecto",
       repo: "nyckdapixel/projecto",
       desc: "Desenvolvimento web com foco em design moderno e responsivo.",
       tags: ["PHP", "CSS"],
-      link: "https://github.com/nyckdapixel/projecto"
+      link: "https://github.com/nyckdapixel/projecto",
+      cta: "Ver no GitHub"
     },
     {
       name: "sunshinecatalogo",
       repo: "nycollasalbert/sunshinecatalogo",
       desc: "Catálogo digital interativo com sistema de gerenciamento de produtos.",
       tags: ["JavaScript", "CSS", "HTML"],
-      link: "https://github.com/nycollasalbert/sunshinecatalogo"
+      link: "https://github.com/nycollasalbert/sunshinecatalogo",
+      cta: "Ver no GitHub"
     }
   ];
 
@@ -479,6 +492,22 @@ const Projects = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {projects.map((proj, i) => (
           <Card key={proj.name} delay={i * 0.2} className="flex flex-col h-full group">
+            {proj.preview && (
+              <a
+                href={proj.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block -mx-6 -mt-6 mb-6 aspect-[16/10] overflow-hidden rounded-t-xl border-b border-border bg-secondary"
+                aria-label={`Abrir ${proj.name}`}
+              >
+                <img
+                  src={proj.preview}
+                  alt={`Prévia do projeto ${proj.name}`}
+                  className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                />
+              </a>
+            )}
+
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="text-lg font-bold text-foreground mb-1 group-hover:text-[hsl(var(--accent))] transition-colors">
@@ -487,7 +516,11 @@ const Projects = () => {
                 <p className="text-xs font-mono text-muted-foreground">{proj.repo}</p>
               </div>
               <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-                <Github className="text-foreground" size={20} />
+                {proj.preview ? (
+                  <Globe2 className="text-foreground" size={20} />
+                ) : (
+                  <Github className="text-foreground" size={20} />
+                )}
               </div>
             </div>
             
@@ -509,7 +542,7 @@ const Projects = () => {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-sm font-semibold text-foreground hover:opacity-70 transition-opacity"
               >
-                Ver no GitHub <ExternalLink size={16} />
+                {proj.cta} <ExternalLink size={16} />
               </a>
             </div>
           </Card>
